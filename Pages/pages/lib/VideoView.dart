@@ -11,7 +11,7 @@ class VideoView extends StatefulWidget {
 class _VideoViewState extends State<VideoView> {
   late VideoPlayerController _controller;
   bool isMuted = false;
-  bool showControls = false;
+  bool showControls = true;
   double playbackSpeed = 1.0;
 
   @override
@@ -96,6 +96,7 @@ class _VideoViewState extends State<VideoView> {
   }
 
   videoPlayerWidget() {
+    double screenHeight = MediaQuery.of(context).size.height;
     return SizedBox(
       height: 190,
       width: 230,
@@ -107,12 +108,11 @@ class _VideoViewState extends State<VideoView> {
           alignment: Alignment.bottomCenter,
           children: [
             Container(
-              color: Colors.green,
               child: _controller.value.isInitialized
                   ? VideoPlayer(_controller)
                   : const Center(child: CircularProgressIndicator()),
             ),
-            if (showControls) videoPlayerControls()
+            if (showControls) videoPlayerControls(),
           ],
         ),
       ),
@@ -130,15 +130,6 @@ class _VideoViewState extends State<VideoView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            VideoProgressIndicator(
-              _controller,
-              allowScrubbing: true,
-              colors: VideoProgressColors(
-                playedColor: Colors.blue,
-                bufferedColor: Colors.grey,
-                backgroundColor: Colors.black,
-              ),
-            ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -240,6 +231,17 @@ class _VideoViewState extends State<VideoView> {
                 ),
               ],
             ),
+            VideoProgressIndicator(
+              _controller,
+              allowScrubbing: true,
+              colors: VideoProgressColors(
+                playedColor: Colors.white,
+                bufferedColor: Colors.grey,
+              ),
+            ),
+            SizedBox(
+              height: screenHeight * 0.01,
+            )
           ],
         ),
       ),
