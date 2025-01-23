@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pages/fullscreen.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoView extends StatefulWidget {
@@ -73,21 +74,17 @@ class _VideoViewState extends State<VideoView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Video Player with Overlay Controls')),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          elevation: 4,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: SizedBox(
-              height: 500,
-              child: Column(
-                children: [
-                  videoPlayerWidget(),
-                ],
-              ),
+      body: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 4,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: SizedBox(
+            height: 500,
+            child: Column(
+              children: [
+                videoPlayerWidget(),
+              ],
             ),
           ),
         ),
@@ -96,7 +93,6 @@ class _VideoViewState extends State<VideoView> {
   }
 
   videoPlayerWidget() {
-    double screenHeight = MediaQuery.of(context).size.height;
     return SizedBox(
       height: 190,
       width: 230,
@@ -113,6 +109,35 @@ class _VideoViewState extends State<VideoView> {
                   : const Center(child: CircularProgressIndicator()),
             ),
             if (showControls) videoPlayerControls(),
+            AnimatedOpacity(
+              opacity: showControls ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    key: ValueKey<bool>(_controller.value.isPlaying),
+                    decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.4),
+                        shape: BoxShape.circle),
+                    child: IconButton(
+                      onPressed: () {
+                        controlPlay();
+                      },
+                      icon: Icon(
+                        _controller.value.isPlaying
+                            ? Icons.pause
+                            : Icons.play_arrow,
+                        size: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )
           ],
         ),
       ),
@@ -120,130 +145,148 @@ class _VideoViewState extends State<VideoView> {
   }
 
   videoPlayerControls() {
-    double screenHeight = MediaQuery.of(context).size.height;
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Row(
+    return Container(
+      padding: EdgeInsets.zero,
+      decoration: BoxDecoration(
+          gradient: LinearGradient(
+              colors: [Colors.black.withOpacity(1), Colors.transparent],
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter)),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(left: 20, right: 14),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(
-                  icon: Icon(
-                    _controller.value.isPlaying
-                        ? Icons.pause
-                        : Icons.play_arrow,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                  onPressed: () {
-                    controlPlay();
-                  },
-                ),
                 Text(
                   formatDuration(_controller.value.position),
-                  style: const TextStyle(color: Colors.white, fontSize: 15),
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
-                IconButton(
-                  icon: Icon(
+                InkWell(
+                  child: Icon(
                     isMuted ? Icons.volume_off : Icons.volume_up,
                     color: Colors.white,
-                    size: 16,
+                    size: 15,
                   ),
-                  onPressed: () {
+                  onTap: () {
                     setState(() {
                       isMuted = !isMuted;
                       _controller.setVolume(isMuted ? 0.0 : 1.0);
                     });
                   },
                 ),
-                PopupMenuButton<String>(
-                  icon: const Icon(
-                    Icons.more_vert,
+                InkWell(
+                  child: const Icon(
+                    Icons.fullscreen,
                     color: Colors.white,
-                    size: 16,
+                    size: 15,
                   ),
-                  onSelected: (value) {
-                    if (value == 'Download') {
-                      // Implement download functionality
-                    } else if (value == 'PIP') {
-                      // Implement picture-in-picture functionality
+                  onTap: () {
+                    setState(() {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              FullscreenVideoPage(controller: _controller),
+                        ),
+                      );
+                    });
+                  },
+                ),
+                InkWell(
+                  onTap: () async {
+                    final RenderBox overlay = Overlay.of(context)!
+                        .context
+                        .findRenderObject() as RenderBox;
+                    final result = await showMenu<String>(
+                      context: context,
+                      position: RelativeRect.fromLTRB(
+                        0, // Position it where you want
+                        0, // You can adjust this value for vertical alignment
+                        0,
+                        0,
+                      ),
+                      items: <PopupMenuEntry<String>>[
+                        PopupMenuItem<String>(
+                          value: 'Download',
+                          child: const Text('Download',
+                              style: TextStyle(fontSize: 12)),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'Speed',
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              const Text('Playback Speed',
+                                  style: TextStyle(fontSize: 12)),
+                              PopupMenuButton<double>(
+                                onSelected: (value) {
+                                  setState(() {
+                                    playbackSpeed = value;
+                                    _controller.setPlaybackSpeed(playbackSpeed);
+                                  });
+                                },
+                                itemBuilder: (context) {
+                                  return [0.5, 1.0, 1.5, 2.0]
+                                      .map((speed) => PopupMenuItem<double>(
+                                            value: speed,
+                                            child: Text('${speed}x'),
+                                          ))
+                                      .toList();
+                                },
+                                icon: const Icon(
+                                  Icons.arrow_right,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'PIP',
+                          child: const Text('Picture in Picture',
+                              style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                    );
+
+                    if (result != null) {
+                      if (result == 'Download') {
+                        // Handle the download action
+                      } else if (result == 'PIP') {
+                        // Handle the Picture in Picture action
+                      }
                     }
                   },
-                  itemBuilder: (BuildContext context) {
-                    return [
-                      PopupMenuItem<String>(
-                        value: 'Speed',
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Playback Speed',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            PopupMenuButton<double>(
-                              onSelected: (value) {
-                                setState(() {
-                                  playbackSpeed = value;
-                                  _controller.setPlaybackSpeed(playbackSpeed);
-                                });
-                              },
-                              itemBuilder: (context) {
-                                return [0.5, 1.0, 1.5, 2.0]
-                                    .map((speed) => PopupMenuItem<double>(
-                                          value: speed,
-                                          child: Text('${speed}x'),
-                                        ))
-                                    .toList();
-                              },
-                              icon: const Icon(
-                                Icons.arrow_right,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem<String>(
-                        value: 'Download',
-                        child: const Text(
-                          'Download',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ),
-                      PopupMenuItem<String>(
-                        value: 'PIP',
-                        child: const Text(
-                          'Picture in Picture',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ];
-                  },
-                  offset: Offset(0, -screenHeight * 0.15),
+                  child: const Icon(
+                    Icons.more_vert,
+                    color: Colors.white,
+                    size: 15,
+                  ),
                 ),
               ],
             ),
-            VideoProgressIndicator(
-              _controller,
-              allowScrubbing: true,
-              colors: VideoProgressColors(
-                playedColor: Colors.white,
-                bufferedColor: Colors.grey,
+          ),
+          Padding(padding: EdgeInsets.symmetric(vertical: 4)),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 15, left: 18, right: 18),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: VideoProgressIndicator(
+                padding: EdgeInsets.zero,
+                _controller,
+                allowScrubbing: true,
+                colors: VideoProgressColors(
+                  playedColor: Colors.white,
+                  bufferedColor: Colors.grey,
+                ),
               ),
             ),
-            SizedBox(
-              height: screenHeight * 0.01,
-            )
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
