@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:terez/Provider/sign_up_provider.dart';
+import 'package:terez/pages/Forgot_Password.dart';
 import 'package:terez/pages/Set_up_Profile.dart';
 import 'package:terez/styling/App_Colors.dart';
 
@@ -250,6 +251,23 @@ class _SignUpPageState extends State<SignUpPage> {
                                 ],
                               ),
                               SizedBox(height: 30),
+                              if (provider.isSignIn) ...[
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    ForgotPassword()));
+                                      },
+                                      child: Text(
+                                        'Forgot password?',
+                                        style: TextStyle(color: Colors.black),
+                                      )),
+                                )
+                              ],
                               if (!provider.isSignIn) ...[
                                 TextFormField(
                                   controller:
